@@ -1,87 +1,91 @@
-# I determinanti della mobilità dei laureati nelle province italiane: un'analisi econometrica spaziale (NUTS 3)
+# Analisi della distribuzione spaziale e dei flussi di mobilità dei laureati nelle province italiane
 
-Analisi dei fattori socio-economici che influenzano la mobilità dei laureati a livello provinciale in Italia, con l'obiettivo di verificare se l'attrattività di un territorio dipenda non solo dai fondamentali economici classici (lavoro e reddito), ma anche da fattori "soft" come vivacità culturale e innovazione tecnologica. Data la natura territoriale dei dati, l'analisi individua e corregge gli effetti di dipendenza spaziale.
+Studio delle dinamiche di mobilità interna dei laureati in Italia su scala provinciale (anno 2021), con l'obiettivo di mappare la geografia del capitale umano e comprendere come le interdipendenze territoriali e i fattori socio-economici locali influenzino la capacità dei territori di attrarre o trattenere competenze elevate.
 
-Progetto realizzato per il corso di **Analisi dei Dati Spaziali (ADS)**, Università degli Studi di Napoli Parthenope.
+**Domanda di ricerca**: in che misura le interazioni spaziali e le caratteristiche socio-economiche provinciali spiegano i flussi migratori di capitale umano qualificato in Italia?
+
+Progetto di gruppo — Luongo Maria Francesca, Maione Pierluigi, Saporito Elisa, Siniscalchi Bianca — Università degli Studi di Napoli Parthenope.
 
 ## Dati
 
-- **Fonte**: BES ISTAT (Benessere Equo e Sostenibile)
-- Campione di **107 province italiane (NUTS 3)**
-- **Variabile dipendente**: mobilità dei laureati italiani (saldo/tasso di mobilità)
-- **Variabili esplicative principali**:
-  - `addetti_imprese_culturali` — densità di lavoratori nel settore creativo/culturale
-  - `emigrazione_ospedaliera` — indice di efficienza dei servizi sanitari (proxy di qualità della vita)
-  - `brevetti` — numero di brevetti depositati (proxy di innovazione)
-  - `red_medio_pro_capite` — benessere economico diffuso
-  - `tasso_occupazione` — dinamismo del mercato del lavoro locale
+- **Fonte**: [ISTAT BES](https://www.istat.it/it/benessere-e-sostenibilit%C3%A0) (Benessere Equo e Sostenibile)
+- 107 province italiane (NUTS-3), anno 2021
+- **Variabile dipendente**: `mobilità_laureati` — saldo migratorio dei laureati
+- **Variabili esplicative** (13 candidate): quota di occupati nel settore culturale (`addetti_culturali`), competenze INVALSI (italiano e matematica), accesso a internet ultraveloce, tasso di NEET, quota di laureati residenti, trasporto pubblico locale, reddito pro capite, retribuzione media, tassi di occupazione (generale e femminile), brevetti EPO per milione di abitanti, quota di occupati ICT
 
 ## Metodologia
 
-**1. Diagnostica del modello OLS**
+**1. Analisi esplorativa e descrittiva**
 
-Stimato un modello di regressione lineare di base, sottoposto a una batteria di test diagnostici:
+La variabile dipendente presenta media e mediana negative (rispettivamente -9,79 e -9,20): la condizione "normale" per una provincia italiana è un saldo migratorio negativo. Il coefficiente di variazione (1,65) conferma una fortissima eterogeneità territoriale. Distribuzione approssimativamente normale ma con picco spostato a sinistra dello zero.
+
+Le variabili esplicative più asimmetriche (`tpl`, `brevetti`, `reddito_pro_capite`) sono state trasformate in logaritmo (`log` o `log1p` per gestire gli zeri), riducendo sensibilmente skewness e kurtosi.
+
+**2. Analisi esplorativa spaziale**
+
+Costruzione della matrice di pesi spaziali a contiguità **Queen**, standardizzata per riga:
+- 107 province, connettività media di 4,45 vicini per unità
+- Province isolate (1 solo link): Cagliari, Trieste; provincia più connessa: Firenze (9 link)
+- Verifica della prima legge della geografia di Tobler
+
+**Test di autocorrelazione spaziale globale**:
+- **Moran's I = 0,585** (p < 2,2e-16): forte autocorrelazione spaziale positiva
+- **Geary's C = 0,428** (p < 2,2e-16): conferma incrociata — i due indici concordi rendono la dipendenza spaziale un fenomeno pervasivo e non un artefatto statistico
+
+**Mappa LISA (cluster locali)**:
+- Cluster High-High (Nord): Lombardia, Emilia-Romagna, Veneto — province ad alta attrattività circondate da vicini altrettanto forti
+- Cluster Low-Low (Sud): Campania, Calabria, Puglia, Sicilia — nucleo strutturale del brain drain
+
+**3. Regressione OLS e selezione del modello**
+
+- Modello completo (13 variabili) → selezione **backward stepwise** basata su AIC (da 432,32 a 424,48)
+- Diagnosi di multicollinearità tramite **VIF**: `occupazione_fem` (VIF = 7,69, forte sovrapposizione con il reddito) rimossa dal modello finale (`mod2`), che ottiene VIF tutti sotto 5
+- **R² aggiustato del modello OLS finale: 0,814**
+
+**Batteria di test diagnostici su `mod2`**:
 
 | Test | Scopo | p-value | Esito |
 |---|---|---|---|
-| Ramsey RESET | Forma funzionale | 0.1095 | ✅ Modello lineare corretto |
-| Shapiro-Wilk | Normalità residui | 0.3200 | ✅ Residui normali |
-| Breusch-Pagan | Omoschedasticità | 0.3509 | ✅ Varianza costante |
-| Durbin-Watson | Autocorrelazione | 0.0214 | ❌ Autocorrelazione presente |
-| VIF | Multicollinearità | < 6.0 | ✅ Coefficienti stabili |
+| Shapiro-Wilk (+ JB, KS) | Normalità residui | 0,7871 | ✅ Residui normali |
+| Breusch-Pagan | Omoschedasticità | 0,6387 | ✅ Varianza costante |
+| Durbin-Watson | Autocorrelazione residui | 0,04064 | ❌ Residui correlati |
 
-Il modello OLS supera tutti i test classici tranne quello sull'incorrelazione dei residui — primo segnale della necessità di un modello spaziale.
+Il modello OLS è statisticamente solido su tutti i fronti classici, ma il test di Durbin-Watson segnala la necessità di un modello spaziale.
 
-**2. Diagnostica spaziale e selezione del modello**
+**4. Selezione del modello spaziale (approccio specific-to-general)**
 
-I test di **Rao's Score (Lagrange Multiplier)** indicano che la dipendenza spaziale risiede nella struttura dell'errore, non nella variabile dipendente:
-- RSerr: p < 0.001 (significativo)
-- adjRSerr: p = 0.023 (significativo)
-- adjRSlag: p = 0.215 (non significativo)
+- **Moran test sui residui OLS**: p = 0,002653, Moran's I = 0,1756 → dipendenza spaziale residua confermata
+- **Lagrange Multiplier test**: sia LM Error (p = 0,01064) che LM Lag (p = 0,00324) risultano significativi
+- **Robust LM test**: Robust LM Error non significativo (p = 0,3558), Robust LM Lag significativo al 10% (p = 0,08353) → il modello **SAR** risulta più appropriato del SEM
+- **Confronto SAR vs SDM**: il Likelihood Ratio test (p = 0,4129) mostra che l'aggiunta dei lag spaziali delle variabili esplicative (tipica dello SDM) non migliora significativamente il modello → si preferisce il SAR per parsimonia
 
-Questo motiva la scelta di un **Spatial Error Model (SEM)** anziché un modello Spatial Lag.
+## Risultati del modello finale (SAR)
 
-**Criterio di selezione (SEM vs SAC)**: è stato inizialmente considerato il modello più generale SAC (Spatial Autoregressive Combined). Il test del Rapporto di Verosimiglianza (LR test) tra SEM e SAC ha restituito un p-value di 0.2216 (non significativo): si accetta l'ipotesi di equivalenza statistica tra i due modelli e, per il principio di parsimonia, si seleziona il SEM, che corregge l'autocorrelazione dell'errore senza introdurre il parametro spaziale aggiuntivo ρ.
+$$Y = \rho WY + X\beta + \varepsilon$$
 
-**3. Stima del modello SEM finale**
+- **Pseudo-R² di Nagelkerke: 0,833** — AIC: 725,73
+- **Rho = 0,216** (p = 0,005): circa il 21,6% della mobilità di una provincia è spiegato dalla mobilità delle province vicine
 
-Matrice di pesi spaziali a contiguità **Queen**, standardizzata per riga (`style = "W"`).
+**Effetti diretti, indiretti e totali** (impact analysis):
 
-- **Pseudo-R² di Nagelkerke**: 0.874 (l'87,4% della varianza spiegata)
-- **AIC**: 756.89 (migliore rispetto a 764.67 dell'OLS)
-- **Lambda (λ = 0.088)**: parametro spaziale significativo, a conferma dell'esistenza di cluster territoriali
+| Variabile | Effetto diretto | Effetto indiretto | Effetto totale |
+|---|---|---|---|
+| log_reddito | 48,13 (p < 0,001) | 12,56 (p = 0,012) | 60,68 |
+| log_tpl | 2,38 (p = 0,011) | 0,62 (p = 0,135) | 3,00 (p = 0,020) |
+| laureati | 0,38 (p = 0,017) | 0,10 (p = 0,097) | 0,47 (p = 0,020) |
+| log_brevetti | 1,88 (p = 0,080, 10%) | 0,49 (p = 0,151) | 2,37 (p = 0,081, 10%) |
+| internet_ultraveloce | 0,09 (p = 0,074, 10%) | 0,02 (p = 0,191) | 0,12 (p = 0,085, 10%) |
+| competenza_numerica | 0,21 (n.s.) | 0,06 (n.s.) | 0,27 (n.s.) |
 
-**4. Analisi di robustezza**
+Il **reddito pro capite** è il driver dominante e genera importanti spillover positivi sulle province limitrofe. Interessante il "risveglio" delle urban amenities (trasporto pubblico, internet ultraveloce) rispetto al modello OLS: nel modello spaziale, una volta ripulito l'effetto della dipendenza territoriale, questi fattori emergono come driver significativi, segno che nell'OLS classico il loro impatto era mascherato dalla distorsione spaziale.
 
-Il modello è stato ristimato con una matrice di pesi a banda di distanza, in alternativa alla contiguità:
-- Indice di Moran = 0.666 (fortissima autocorrelazione spaziale positiva)
-- I coefficienti delle variabili principali (cultura, brevetti, occupazione) restano stabili e significativi
-- La matrice di contiguità risulta comunque preferibile per efficienza statistica (AIC inferiore)
+## Conclusioni
 
-## Risultati
-
-Il modello SEM identifica tre dimensioni distinte che spiegano la mobilità dei laureati:
-
-**Opportunità economiche**
-- Tasso di occupazione (β ≈ 0.546, driver principale): un aumento dell'1% nel tasso di occupazione provinciale si associa a un incremento di circa 0.55 punti nel tasso di mobilità
-- Reddito medio pro capite (β ≈ 0.002, p < 0.001): un aumento di 1.000€ nel reddito medio provinciale genera un incremento di 2 unità nella mobilità
-
-**Attrattività "soft" (classe creativa e innovazione)**
-- Addetti alle imprese culturali (β ≈ 11.11): la variabile con l'impatto unitario più forte del modello — la vivacità culturale agisce come fattore di differenziazione territoriale, in linea con la teoria della "classe creativa" di Richard Florida
-- Brevetti (β ≈ 0.055): l'innovazione tecnologica favorisce l'attrazione di capitale umano qualificato
-
-**Qualità dei servizi (push factor)**
-- Emigrazione ospedaliera (β ≈ -0.362): unico coefficiente negativo e significativo — funge da proxy dell'inefficienza dei servizi sanitari locali; una sanità carente agisce da fattore di repulsione per i laureati
-
-Il parametro spaziale λ significativo conferma che questi fattori non agiscono in isolamento: il successo di una provincia nell'attrarre capitale umano si "contagia" alle province limitrofe, creando macro-aree di attrazione del talento che superano i confini amministrativi.
-
-## Implicazioni
-
-L'evidenza spaziale suggerisce che le politiche di attrazione del capitale umano non dovrebbero essere pensate a livello di singola provincia, ma su scala territoriale vasta, data l'interconnessione geografica rilevata dal modello. Investire solo su lavoro e reddito non basta: cultura, innovazione e qualità dei servizi pubblici sono leve complementari e statisticamente rilevanti.
+Lo studio suggerisce che le politiche locali di attrazione del capitale umano non possono essere pensate in isolamento a livello di singola provincia. Per contrastare il fenomeno della fuga di cervelli non basta creare posti di lavoro generici: serve stimolare interi ecosistemi regionali, agendo simultaneamente su leve economiche (reddito) e infrastrutturali (trasporti e digitale). La mobilità dei laureati in Italia è un fenomeno di rete territoriale, non una competizione tra province isolate: senza interventi coordinati su scala macroregionale, il "moltiplicatore spaziale" continuerà a penalizzare le aree già in ritardo.
 
 ## Strumenti
 
-R — `sf`, `spdep`, `spatialreg` (analisi spaziale), `car` (VIF), `lmtest`, `nortest` (diagnostica), `moments` (indici di forma), `ggcorrplot`, `mapview`, `leaflet` (visualizzazione), `stargazer`
+R — `sf`, `spdep`, `spatialreg` (analisi spaziale, matrici di pesi, test di Moran e Geary, modelli SAR/SEM/SDM), `car` (VIF), `lmtest`, `nortest` (diagnostica OLS), `moments` (indici di forma), `ggcorrplot`, `mapview`, `leaflet` (mappe interattive), `stargazer`
 
 ## Struttura del repository
 
@@ -92,4 +96,4 @@ R — `sf`, `spdep`, `spatialreg` (analisi spaziale), `car` (VIF), `lmtest`, `no
 
 ## Note
 
-Il progetto richiede, oltre al dataset BES ISTAT in formato Excel, uno shapefile con la geometria delle province italiane (NUTS-3) per la componente di analisi spaziale.
+Il progetto richiede, oltre al dataset ISTAT BES in formato Excel, uno shapefile con la geometria delle province italiane (NUTS-3) per la componente di analisi spaziale.
