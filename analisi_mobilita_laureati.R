@@ -25,8 +25,8 @@ library(labstatR)
 library(desk)
 library(performance)
 library(car)
-
-setwd("C:/Users/pierl/OneDrive/Desktop/prog/R/punzo/prog_ads")
+#Rimosso percorso locale per rendere lo script portabile
+#impostare percorso con setwd()
 data <- read_excel("tml.xlsx")
 View(data)
 path=file.choose()
