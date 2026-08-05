@@ -4,7 +4,6 @@ Studio delle dinamiche di mobilità interna dei laureati in Italia su scala prov
 
 **Domanda di ricerca**: in che misura le interazioni spaziali e le caratteristiche socio-economiche provinciali spiegano i flussi migratori di capitale umano qualificato in Italia?
 
-Progetto di gruppo — Luongo Maria Francesca, Maione Pierluigi, Saporito Elisa, Siniscalchi Bianca — Università degli Studi di Napoli Parthenope.
 
 ## Dati
 
